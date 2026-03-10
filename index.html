@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>個人記帳系統 V7</title>
+    <title>個人記帳系統 V8</title>
     <style>
         :root {
             --primary: #2c3e50;
@@ -149,11 +149,14 @@
             border-left: 5px solid var(--accent);
             box-shadow: 0 2px 5px rgba(0,0,0,0.03);
         }
+        .info { flex: 1; position: relative; }
         .info b { display: block; font-size: 1.1rem; }
         .info small { color: #888; display: block; margin-top: 4px; }
         .info .note { color: var(--header-text); font-style: italic; font-size: 0.85rem; margin-top: 5px; }
-        .amount { text-align: right; font-weight: bold; color: #e74c3c; font-size: 1.1rem; }
         
+        .amount { font-weight: bold; color: #e74c3c; font-size: 1.1rem; margin-right: 10px; }
+        
+        .tag-row { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
         .tag {
             display: inline-block;
             padding: 2px 8px;
@@ -161,13 +164,19 @@
             background: rgba(0,0,0,0.05);
             color: var(--accent);
             font-size: 0.75rem;
-            margin-bottom: 5px;
         }
         
-        .action-btns { display: flex; align-items: center; gap: 15px; margin-left: 10px; }
-        .edit-btn { color: var(--accent); cursor: pointer; font-size: 1.1rem; opacity: 0.6; }
-        .edit-btn:hover { opacity: 1; }
-        .del-btn { color: #ccc; cursor: pointer; font-size: 1.5rem; }
+        .action-area { display: flex; align-items: center; }
+        .edit-btn { 
+            color: var(--accent); 
+            cursor: pointer; 
+            font-size: 1.4rem; /* 放大圖示 */
+            opacity: 0.5; 
+            padding: 5px;
+        }
+        .edit-btn:active { opacity: 1; transform: scale(1.1); }
+        
+        .del-btn { color: #ccc; cursor: pointer; font-size: 1.5rem; padding: 5px; }
         .del-btn:hover { color: #e74c3c; }
 
         #importFile { display: none; }
@@ -340,14 +349,16 @@
                 card.className = 'item-card';
                 card.innerHTML = `
                     <div class="info">
-                        <span class="tag">${tag}</span>
+                        <div class="tag-row">
+                            <span class="tag">${tag}</span>
+                            <span class="edit-btn" onclick="editRecord(${index})">✎</span>
+                        </div>
                         <b>${re.desc}</b>
                         <small>${re.date} · ${re.method}</small>
                         ${re.note ? `<div class="note">註：${re.note}</div>` : ''}
                     </div>
-                    <div class="action-btns">
+                    <div class="action-area">
                         <div class="amount">$${Number(re.amount).toLocaleString()}</div>
-                        <span class="edit-btn" onclick="editRecord(${index})">✎</span>
                         <span class="del-btn" onclick="deleteRecord(${index})">×</span>
                     </div>
                 `;
@@ -390,19 +401,14 @@
 
     function editRecord(i) {
         const item = records[i];
-        
-        // 將資料帶回輸入欄位
         document.getElementById('date').value = item.date;
         document.getElementById('method').value = item.method;
         document.getElementById('desc').value = item.desc;
         document.getElementById('amount').value = item.amount;
         document.getElementById('note').value = item.note || "";
         
-        // 移除該筆舊紀錄 (修改後按新增即為更新)
         records.splice(i, 1);
         render();
-        
-        // 捲動回頂部方便編輯
         document.getElementById('top').scrollIntoView({ behavior: 'smooth' });
     }
 
