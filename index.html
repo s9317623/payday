@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>個人記帳系統 V6</title>
+    <title>個人記帳系統 V7</title>
     <style>
         :root {
             --primary: #2c3e50;
@@ -164,13 +164,18 @@
             margin-bottom: 5px;
         }
         
-        .del-btn { color: #ccc; margin-left: 10px; font-size: 1.5rem; }
+        .action-btns { display: flex; align-items: center; gap: 15px; margin-left: 10px; }
+        .edit-btn { color: var(--accent); cursor: pointer; font-size: 1.1rem; opacity: 0.6; }
+        .edit-btn:hover { opacity: 1; }
+        .del-btn { color: #ccc; cursor: pointer; font-size: 1.5rem; }
+        .del-btn:hover { color: #e74c3c; }
+
         #importFile { display: none; }
     </style>
 </head>
 <body data-theme="light">
 
-<div class="container">
+<div class="container" id="top">
     <div class="theme-toggle" onclick="toggleTheme()">🌓</div>
 
     <div class="summary-section">
@@ -214,7 +219,6 @@
 
 <script>
     let records = JSON.parse(localStorage.getItem('expense_v2')) || [];
-    // 預算改為物件儲存 {"2026-03": 50000, "2026-04": 30000}
     let budgets = JSON.parse(localStorage.getItem('monthly_budgets')) || {};
     let currentViewDate = new Date(); 
     
@@ -259,7 +263,7 @@
         const val = document.getElementById('budgetInput').value;
         budgets[key] = val;
         localStorage.setItem('monthly_budgets', JSON.stringify(budgets));
-        renderBudgetStats(); // 只更新預算相關 UI 以避免頻繁重刷清單
+        renderBudgetStats();
     }
 
     function changeMonth(offset) {
@@ -267,7 +271,6 @@
         render();
     }
 
-    // 專門渲染預算剩餘邏輯
     function renderBudgetStats(forceTotal = null) {
         const key = getYearMonthKey();
         const currentBudget = budgets[key] || 0;
@@ -342,8 +345,9 @@
                         <small>${re.date} · ${re.method}</small>
                         ${re.note ? `<div class="note">註：${re.note}</div>` : ''}
                     </div>
-                    <div style="display:flex; align-items:center">
+                    <div class="action-btns">
                         <div class="amount">$${Number(re.amount).toLocaleString()}</div>
+                        <span class="edit-btn" onclick="editRecord(${index})">✎</span>
                         <span class="del-btn" onclick="deleteRecord(${index})">×</span>
                     </div>
                 `;
@@ -382,6 +386,24 @@
         document.getElementById('desc').value = '';
         document.getElementById('amount').value = '';
         document.getElementById('note').value = '';
+    }
+
+    function editRecord(i) {
+        const item = records[i];
+        
+        // 將資料帶回輸入欄位
+        document.getElementById('date').value = item.date;
+        document.getElementById('method').value = item.method;
+        document.getElementById('desc').value = item.desc;
+        document.getElementById('amount').value = item.amount;
+        document.getElementById('note').value = item.note || "";
+        
+        // 移除該筆舊紀錄 (修改後按新增即為更新)
+        records.splice(i, 1);
+        render();
+        
+        // 捲動回頂部方便編輯
+        document.getElementById('top').scrollIntoView({ behavior: 'smooth' });
     }
 
     function deleteRecord(i) {
