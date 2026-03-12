@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>個人記帳系統 V8</title>
+    <title>個人記帳系統</title>
     <style>
         :root {
             --primary: #2c3e50;
@@ -170,7 +170,7 @@
         .edit-btn { 
             color: var(--accent); 
             cursor: pointer; 
-            font-size: 1.4rem; /* 放大圖示 */
+            font-size: 1.4rem;
             opacity: 0.5; 
             padding: 5px;
         }
@@ -210,6 +210,16 @@
                 <option value="電子支付">電子支付</option>
             </select>
         </div>
+        <select id="category">
+            <option value="食">分類：食</option>
+            <option value="衣">分類：衣</option>
+            <option value="住">分類：住</option>
+            <option value="行">分類：行</option>
+            <option value="育">分類：育</option>
+            <option value="樂">分類：樂</option>
+            <option value="保險">分類：保險</option>
+            <option value="其他">分類：其他</option>
+        </select>
         <input type="text" id="desc" placeholder="消費項目 (例如: 看電影)">
         <input type="number" id="amount" placeholder="金額" inputmode="numeric">
         <textarea id="note" placeholder="備註 (選填)"></textarea>
@@ -237,28 +247,11 @@
 
     document.getElementById('date').valueAsDate = new Date();
 
-    const categoryKeywords = {
-        '食': ['餐', '飲', '飯', '麵', '肉', '菜', '超市', '咖啡', '宵夜', '水果', '甜點', '買菜'],
-        '衣': ['衣', '鞋', '帽', '褲', '洗', '飾', '包包', '網購'],
-        '住': ['租', '電', '水', '管理', '家居', '修', '瓦斯', '家具'],
-        '行': ['車', '油', '捷運', '公車', 'Uber', '外送', '高鐵', '台鐵', '機票', '停車', 'ETC'],
-        '育': ['書', '課', '補習', '報', '考', '文具', '學費'],
-        '樂': ['玩', '影', '歌', '劇', '點數', '手遊', '聚餐', '電影', '門票', '寵物', '旅遊']
-    };
-
     function toggleTheme() {
         const current = document.body.getAttribute('data-theme');
         const next = current === 'dark' ? 'light' : 'dark';
         document.body.setAttribute('data-theme', next);
         localStorage.setItem('theme', next);
-    }
-
-    function getTag(desc) {
-        if (desc.includes('電影')) return '樂';
-        for (let tag in categoryKeywords) {
-            if (categoryKeywords[tag].some(k => desc.includes(k))) return tag;
-        }
-        return '其他';
     }
 
     function getYearMonthKey() {
@@ -334,7 +327,7 @@
 
         records.forEach((re, index) => {
             const isThisMonth = re.date.startsWith(currentMonthStr);
-            const tag = getTag(re.desc);
+            const tag = re.category || '其他'; // 使用儲存的分類
 
             if (isThisMonth) {
                 total += Number(re.amount);
@@ -386,23 +379,26 @@
         const desc = document.getElementById('desc').value;
         const amount = document.getElementById('amount').value;
         const method = document.getElementById('method').value;
+        const category = document.getElementById('category').value; // 取得選取分類
         const note = document.getElementById('note').value;
 
         if (!desc || !amount) return alert('請填寫項目與金額');
 
-        records.push({ date, desc, amount, method, note });
+        records.push({ date, desc, amount, method, category, note });
         currentViewDate = new Date(date);
         render();
 
         document.getElementById('desc').value = '';
         document.getElementById('amount').value = '';
         document.getElementById('note').value = '';
+        // 分類選單不重置，方便連續輸入同類型消費
     }
 
     function editRecord(i) {
         const item = records[i];
         document.getElementById('date').value = item.date;
         document.getElementById('method').value = item.method;
+        document.getElementById('category').value = item.category || "其他"; // 帶回分類
         document.getElementById('desc').value = item.desc;
         document.getElementById('amount').value = item.amount;
         document.getElementById('note').value = item.note || "";
