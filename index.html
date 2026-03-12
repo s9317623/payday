@@ -211,14 +211,17 @@
             </select>
         </div>
         <select id="category">
-            <option value="食">分類：食</option>
-            <option value="衣">分類：衣</option>
-            <option value="住">分類：住</option>
-            <option value="行">分類：行</option>
-            <option value="育">分類：育</option>
-            <option value="樂">分類：樂</option>
+            <option value="飲食">分類：飲食</option>
+            <option value="交通">分類：交通</option>
+            <option value="生活用品">分類：生活用品</option>
+            <option value="服飾">分類：服飾</option>
+            <option value="居住">分類：居住</option>
+            <option value="醫療">分類：醫療</option>
+            <option value="娛樂">分類：娛樂</option>
+            <option value="投資">分類：投資</option>
             <option value="保險">分類：保險</option>
-            <option value="其他">分類：其他</option>
+            <option value="人情/禮金">分類：人情/禮金</option>
+            <option value="Vico">分類：Vico</option>
         </select>
         <input type="text" id="desc" placeholder="消費項目 (例如: 看電影)">
         <input type="number" id="amount" placeholder="金額" inputmode="numeric">
@@ -327,7 +330,7 @@
 
         records.forEach((re, index) => {
             const isThisMonth = re.date.startsWith(currentMonthStr);
-            const tag = re.category || '其他'; // 使用儲存的分類
+            const tag = re.category || '飲食'; 
 
             if (isThisMonth) {
                 total += Number(re.amount);
@@ -379,7 +382,7 @@
         const desc = document.getElementById('desc').value;
         const amount = document.getElementById('amount').value;
         const method = document.getElementById('method').value;
-        const category = document.getElementById('category').value; // 取得選取分類
+        const category = document.getElementById('category').value; 
         const note = document.getElementById('note').value;
 
         if (!desc || !amount) return alert('請填寫項目與金額');
@@ -391,14 +394,13 @@
         document.getElementById('desc').value = '';
         document.getElementById('amount').value = '';
         document.getElementById('note').value = '';
-        // 分類選單不重置，方便連續輸入同類型消費
     }
 
     function editRecord(i) {
         const item = records[i];
         document.getElementById('date').value = item.date;
         document.getElementById('method').value = item.method;
-        document.getElementById('category').value = item.category || "其他"; // 帶回分類
+        document.getElementById('category').value = item.category || "飲食"; 
         document.getElementById('desc').value = item.desc;
         document.getElementById('amount').value = item.amount;
         document.getElementById('note').value = item.note || "";
