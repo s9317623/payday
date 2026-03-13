@@ -69,10 +69,15 @@
         
         .budget-info {
             font-size: 0.85rem;
-            margin-top: 5px;
+            margin-top: 8px;
             background: rgba(255,255,255,0.1);
-            padding: 8px 12px;
+            padding: 10px 12px;
             border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .budget-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -156,7 +161,7 @@
         
         .amount { font-weight: bold; color: #e74c3c; font-size: 1.1rem; margin-right: 10px; }
         
-        .tag-row { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
+        .tag-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
         .tag {
             display: inline-block;
             padding: 2px 8px;
@@ -164,6 +169,10 @@
             background: rgba(0,0,0,0.05);
             color: var(--accent);
             font-size: 0.75rem;
+        }
+        .payer-tag {
+            color: #e67e22;
+            background: rgba(230, 126, 34, 0.1);
         }
         
         .action-area { display: flex; align-items: center; }
@@ -195,15 +204,25 @@
         </div>
         <h1 id="totalMonth">$0</h1>
         <div class="budget-info">
-            <span>月預算：$<input type="number" id="budgetInput" oninput="updateBudget()" placeholder="未設定"></span>
-            <span id="remainingAmount">剩餘：$0</span>
+            <div class="budget-row">
+                <span>老公預算：$<input type="number" id="budgetHusband" oninput="updateBudget()" placeholder="未設定"></span>
+                <span id="remainHusband">餘額：$0</span>
+            </div>
+            <div class="budget-row">
+                <span>老婆預算：$<input type="number" id="budgetWife" oninput="updateBudget()" placeholder="未設定"></span>
+                <span id="remainWife">餘額：$0</span>
+            </div>
         </div>
         <div class="analysis-grid" id="analysisBox"></div>
     </div>
 
     <div class="input-card">
         <div style="display:flex; gap:10px">
-            <input type="date" id="date" style="flex:1">
+            <input type="date" id="date" style="flex:1.5">
+            <select id="payer" style="flex:1">
+                <option value="老公">老公</option>
+                <option value="老婆">老婆</option>
+            </select>
             <select id="method" style="flex:1">
                 <option value="現金">現金</option>
                 <option value="信用卡">信用卡</option>
@@ -241,7 +260,8 @@
 
 <script>
     let records = JSON.parse(localStorage.getItem('expense_v2')) || [];
-    let budgets = JSON.parse(localStorage.getItem('monthly_budgets')) || {};
+    // 預算結構改為存儲對象 { "2026-03": { husband: 1000, wife: 1000 } }
+    let budgets = JSON.parse(localStorage.getItem('monthly_budgets_v2')) || {};
     let currentViewDate = new Date(); 
     
     if (localStorage.getItem('theme') === 'dark') {
@@ -265,10 +285,15 @@
 
     function updateBudget() {
         const key = getYearMonthKey();
-        const val = document.getElementById('budgetInput').value;
-        budgets[key] = val;
-        localStorage.setItem('monthly_budgets', JSON.stringify(budgets));
-        renderBudgetStats();
+        const husbandVal = document.getElementById('budgetHusband').value;
+        const wifeVal = document.getElementById('budgetWife').value;
+        
+        budgets[key] = {
+            husband: husbandVal,
+            wife: wifeVal
+        };
+        localStorage.setItem('monthly_budgets_v2', JSON.stringify(budgets));
+        render(); // 重新計算餘額
     }
 
     function changeMonth(offset) {
@@ -276,39 +301,31 @@
         render();
     }
 
-    function renderBudgetStats(forceTotal = null) {
+    // 更新餘額顯示
+    function renderBudgetStats(totals) {
         const key = getYearMonthKey();
-        const currentBudget = budgets[key] || 0;
-        document.getElementById('budgetInput').value = currentBudget || "";
+        const currentBudget = budgets[key] || { husband: "", wife: "" };
         
-        const remainingDisplay = document.getElementById('remainingAmount');
-        const total = forceTotal !== null ? forceTotal : calculateCurrentMonthTotal();
+        document.getElementById('budgetHusband').value = currentBudget.husband || "";
+        document.getElementById('budgetWife').value = currentBudget.wife || "";
+        
+        const displayHusband = document.getElementById('remainHusband');
+        const displayWife = document.getElementById('remainWife');
 
-        if (currentBudget > 0) {
-            const remain = currentBudget - total;
-            remainingDisplay.innerText = `剩餘：$${remain.toLocaleString()}`;
-            const threshold = currentBudget * 0.1;
-            
-            if (remain < 0) {
-                remainingDisplay.style.color = "#ff8a8a"; 
-            } else if (remain <= threshold) {
-                remainingDisplay.style.color = "#ff0000"; 
-                remainingDisplay.style.fontWeight = "bold";
+        const updateRemain = (display, budget, spent) => {
+            if (budget > 0) {
+                const remain = budget - spent;
+                display.innerText = `餘額：$${remain.toLocaleString()}`;
+                display.style.color = remain < 0 ? "#ff8a8a" : "white";
+                display.style.fontWeight = remain < (budget * 0.1) ? "bold" : "normal";
             } else {
-                remainingDisplay.style.color = "white";
-                remainingDisplay.style.fontWeight = "normal";
+                display.innerText = "餘額：--";
+                display.style.color = "white";
             }
-        } else {
-            remainingDisplay.innerText = "尚未設定預算";
-            remainingDisplay.style.color = "white";
-        }
-    }
+        };
 
-    function calculateCurrentMonthTotal() {
-        const currentMonthStr = getYearMonthKey();
-        return records
-            .filter(re => re.date.startsWith(currentMonthStr))
-            .reduce((sum, re) => sum + Number(re.amount), 0);
+        updateRemain(displayHusband, Number(currentBudget.husband), totals.husband);
+        updateRemain(displayWife, Number(currentBudget.wife), totals.wife);
     }
 
     function render() {
@@ -324,6 +341,7 @@
         document.getElementById('monthTitle').innerText = `${currentMonthStr.replace('-','/')} 總支出`;
 
         let total = 0;
+        let payerTotals = { husband: 0, wife: 0 };
         let stats = {};
 
         records.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -331,14 +349,19 @@
         records.forEach((re, index) => {
             const isThisMonth = re.date.startsWith(currentMonthStr);
             const tag = re.category || '飲食'; 
+            const payer = re.payer || '老公';
 
             if (isThisMonth) {
-                total += Number(re.amount);
-                stats[tag] = (stats[tag] || 0) + Number(re.amount);
+                const amt = Number(re.amount);
+                total += amt;
+                stats[tag] = (stats[tag] || 0) + amt;
+                if (payer === '老公') payerTotals.husband += amt;
+                else payerTotals.wife += amt;
             }
 
             const matchesSearch = re.desc.toLowerCase().includes(searchTerm) || 
-                                 (re.note && re.note.toLowerCase().includes(searchTerm));
+                                 (re.note && re.note.toLowerCase().includes(searchTerm)) ||
+                                 payer.includes(searchTerm);
 
             if (matchesSearch) {
                 const card = document.createElement('div');
@@ -347,10 +370,11 @@
                     <div class="info">
                         <div class="tag-row">
                             <span class="tag">${tag}</span>
+                            <span class="tag payer-tag">${payer}</span>
                             <span class="edit-btn" onclick="editRecord(${index})">✎</span>
                         </div>
                         <b>${re.desc}</b>
-                        <small>${re.date} · ${re.method}</small>
+                        <small>${re.date} · ${re.method} · 付款：${payer}</small>
                         ${re.note ? `<div class="note">註：${re.note}</div>` : ''}
                     </div>
                     <div class="action-area">
@@ -373,7 +397,7 @@
         }
 
         monthTotalDisplay.innerText = `$${total.toLocaleString()}`;
-        renderBudgetStats(total);
+        renderBudgetStats(payerTotals);
         localStorage.setItem('expense_v2', JSON.stringify(records));
     }
 
@@ -383,11 +407,12 @@
         const amount = document.getElementById('amount').value;
         const method = document.getElementById('method').value;
         const category = document.getElementById('category').value; 
+        const payer = document.getElementById('payer').value; // 取得支付者
         const note = document.getElementById('note').value;
 
         if (!desc || !amount) return alert('請填寫項目與金額');
 
-        records.push({ date, desc, amount, method, category, note });
+        records.push({ date, desc, amount, method, category, payer, note });
         currentViewDate = new Date(date);
         render();
 
@@ -400,6 +425,7 @@
         const item = records[i];
         document.getElementById('date').value = item.date;
         document.getElementById('method').value = item.method;
+        document.getElementById('payer').value = item.payer || "老公"; // 帶回支付者
         document.getElementById('category').value = item.category || "飲食"; 
         document.getElementById('desc').value = item.desc;
         document.getElementById('amount').value = item.amount;
@@ -443,7 +469,7 @@
                     records = data.records || [];
                     budgets = data.budgets || {};
                 }
-                localStorage.setItem('monthly_budgets', JSON.stringify(budgets));
+                localStorage.setItem('monthly_budgets_v2', JSON.stringify(budgets));
                 render();
                 alert('匯入成功！');
             } catch (err) { alert('檔案格式不正確'); }
