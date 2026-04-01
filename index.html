@@ -260,7 +260,6 @@
 
 <script>
     let records = JSON.parse(localStorage.getItem('expense_v2')) || [];
-    // 預算結構改為存儲對象 { "2026-03": { husband: 1000, wife: 1000 } }
     let budgets = JSON.parse(localStorage.getItem('monthly_budgets_v2')) || {};
     let currentViewDate = new Date(); 
     
@@ -293,7 +292,7 @@
             wife: wifeVal
         };
         localStorage.setItem('monthly_budgets_v2', JSON.stringify(budgets));
-        render(); // 重新計算餘額
+        render(); 
     }
 
     function changeMonth(offset) {
@@ -301,7 +300,6 @@
         render();
     }
 
-    // 更新餘額顯示
     function renderBudgetStats(totals) {
         const key = getYearMonthKey();
         const currentBudget = budgets[key] || { husband: "", wife: "" };
@@ -351,38 +349,40 @@
             const tag = re.category || '飲食'; 
             const payer = re.payer || '老公';
 
+            // 修正處：僅當月份符合時才計算總額與分類統計
             if (isThisMonth) {
                 const amt = Number(re.amount);
                 total += amt;
                 stats[tag] = (stats[tag] || 0) + amt;
                 if (payer === '老公') payerTotals.husband += amt;
                 else payerTotals.wife += amt;
-            }
 
-            const matchesSearch = re.desc.toLowerCase().includes(searchTerm) || 
-                                 (re.note && re.note.toLowerCase().includes(searchTerm)) ||
-                                 payer.includes(searchTerm);
+                // 修正處：列表僅渲染該月份符合搜尋條件的紀錄
+                const matchesSearch = re.desc.toLowerCase().includes(searchTerm) || 
+                                     (re.note && re.note.toLowerCase().includes(searchTerm)) ||
+                                     payer.includes(searchTerm);
 
-            if (matchesSearch) {
-                const card = document.createElement('div');
-                card.className = 'item-card';
-                card.innerHTML = `
-                    <div class="info">
-                        <div class="tag-row">
-                            <span class="tag">${tag}</span>
-                            <span class="tag payer-tag">${payer}</span>
-                            <span class="edit-btn" onclick="editRecord(${index})">✎</span>
+                if (matchesSearch) {
+                    const card = document.createElement('div');
+                    card.className = 'item-card';
+                    card.innerHTML = `
+                        <div class="info">
+                            <div class="tag-row">
+                                <span class="tag">${tag}</span>
+                                <span class="tag payer-tag">${payer}</span>
+                                <span class="edit-btn" onclick="editRecord(${index})">✎</span>
+                            </div>
+                            <b>${re.desc}</b>
+                            <small>${re.date} · ${re.method} · 付款：${payer}</small>
+                            ${re.note ? `<div class="note">註：${re.note}</div>` : ''}
                         </div>
-                        <b>${re.desc}</b>
-                        <small>${re.date} · ${re.method} · 付款：${payer}</small>
-                        ${re.note ? `<div class="note">註：${re.note}</div>` : ''}
-                    </div>
-                    <div class="action-area">
-                        <div class="amount">$${Number(re.amount).toLocaleString()}</div>
-                        <span class="del-btn" onclick="deleteRecord(${index})">×</span>
-                    </div>
-                `;
-                list.appendChild(card);
+                        <div class="action-area">
+                            <div class="amount">$${Number(re.amount).toLocaleString()}</div>
+                            <span class="del-btn" onclick="deleteRecord(${index})">×</span>
+                        </div>
+                    `;
+                    list.appendChild(card);
+                }
             }
         });
 
@@ -407,7 +407,7 @@
         const amount = document.getElementById('amount').value;
         const method = document.getElementById('method').value;
         const category = document.getElementById('category').value; 
-        const payer = document.getElementById('payer').value; // 取得支付者
+        const payer = document.getElementById('payer').value; 
         const note = document.getElementById('note').value;
 
         if (!desc || !amount) return alert('請填寫項目與金額');
@@ -425,7 +425,7 @@
         const item = records[i];
         document.getElementById('date').value = item.date;
         document.getElementById('method').value = item.method;
-        document.getElementById('payer').value = item.payer || "老公"; // 帶回支付者
+        document.getElementById('payer').value = item.payer || "老公"; 
         document.getElementById('category').value = item.category || "飲食"; 
         document.getElementById('desc').value = item.desc;
         document.getElementById('amount').value = item.amount;
